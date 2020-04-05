@@ -15,15 +15,14 @@ class Test2:
     X  Data to analyze
     """
     def __init__(self):
-        self.df = np.empty_like
+        self.df = pd.read_csv("Data.csv")
         self.X = np.empty_like
 
     def readData(self):
         """
-        Read csv data
+        Processing df and extract states
         :return: states abbr array
         """
-        self.df = pd.read_csv("Data.csv")
         states = pd.DataFrame(self.df[['state']])
 
         # Select all columns except first four
