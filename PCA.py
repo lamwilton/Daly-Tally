@@ -1,13 +1,10 @@
 import pandas as pd
-import pandasql as ps
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn import linear_model
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 from ppca import PPCA
 
-class Test2:
+class PCA:
     """
     Main class
 
@@ -50,6 +47,9 @@ class Test2:
         states = self.readData()
         result = self.probPCA()
         # Plot
+        plt.title("Probabilistic PCA of data of 2 dimensions")
+        plt.xlabel("Healthiness")
+        plt.ylabel("Inverse number of cases")
         plt.scatter(result[:, 0], result[:, 1])
         for i, state in enumerate(states):
             plt.text(result[i, 0] + 0.5, result[i, 1] + 0.5, state)
@@ -58,6 +58,6 @@ class Test2:
 
 
 if __name__ == '__main__':
-    test2 = Test2()
-    test2.mainRun()
+    test = PCA()
+    test.mainRun()
     print()

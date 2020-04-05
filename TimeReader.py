@@ -40,45 +40,83 @@ class TimeReader:
 
 class SigmoidFitter:
     """
+    Fitting the data to the sigmoid function and plot it
     https://stackoverflow.com/questions/55725139/fit-sigmoid-function-s-shape-curve-to-data-using-python
     Initial guess reference
     https://towardsdatascience.com/covid-19-infection-in-italy-mathematical-models-and-predictions-7784b4d7dd8d
     """
-    def __init__(self, xdata, ydata):
+    def __init__(self, xdata, ydata, state):
         self.xdata = xdata
         self.ydata = ydata
+        self.state = state
+        self.popt = np.empty_like
+        self.pcov = np.empty_like
+
+    def sigmoid(self, x, a, x0, L):
+        """
+        Sigmoid function
+        :param x:
+        :param a: some constant
+        :param x0: x shift
+        :param L: Max
+        :return:
+        """
+        return L / (1 + np.exp(-(x - x0) / a))
 
     def fit(self):
-        p0 = [2, 100, 20000]  # this is an mandatory initial guess
-        popt, pcov = curve_fit(sigmoid, self.xdata, self.ydata, p0=p0)
-        y = sigmoid(self.xdata, *popt)
-        return y, popt
+        """
+        Curve fitting
+        :return:
+        """
+        # Error function sigma to apply greater weights to the recent points
+        temp = np.arange(0, np.size(self.xdata))
+        sigma = 1 / temp ** 2
 
+        p0 = [1, 80, 2000]  # this is an mandatory initial guess
+        self.popt, self.pcov = curve_fit(self.sigmoid, self.xdata, self.ydata, p0=p0, sigma=sigma)
 
-def sigmoid(x, a, x0, L):
-    return L / (1 + np.exp(-(x - x0) / a))
+    def compute(self):
+        """
+        Do the fitting
+        :return:
+        """
+        self.fit()
+        perr = np.sqrt(np.diag(self.pcov))
+        print("Speed: " + str(self.popt[0]) + " +/- " + str(perr[0]))
+        print("Day of the half point: " + str(self.popt[1]) + " +/- " + str(perr[1]))
+        print("Total number: " + str(self.popt[2]) + " +/- " + str(perr[2]))
+
+    def plot(self):
+        """
+        Plot sigmoid results
+        :param popt: parameters array
+        :return:
+        """
+        plt.title("Number of deaths since day 1 at " + self.state)
+        plt.xlabel("Days since first case")
+        plt.ylabel("Number")
+        plt.scatter(self.xdata, self.ydata)
+        x = np.linspace(2, 500, 5000)
+        y = self.sigmoid(x, *self.popt)
+        plt.plot(x, y)
+        # plt.yscale('log')
+        plt.xlim(45, 120)
+        plt.ylim(0, max(y) * 1.1)
+        plt.savefig(self.state + "_sigmoid.png", transperent=True)
+        plt.show()
 
 
 def main():
+    state = "CA"
     timereader = TimeReader()
-    stateData = timereader.getStateData('CA')
+    stateData = timereader.getStateData(state)
     death = stateData['death']
     day = stateData['day']
 
     # Curve Fitting
-    sigmoidfitter = SigmoidFitter(xdata=day, ydata=death)
-    ypredict, popt = sigmoidfitter.fit()
-    print("Total deaths: " + str(popt[2]))
-    print("Half point: " + str(popt[1]))
-
-    # Plot
-    plt.scatter(day, death)
-    x = np.linspace(0, 200, 10000)
-    y = sigmoid(x, *popt)
-    plt.plot(x, y)
-    plt.xlim(45, 100)
-    plt.ylim(0, 500)
-    plt.show()
+    sigmoidfitter = SigmoidFitter(xdata=day, ydata=death, state=state)
+    sigmoidfitter.compute()
+    sigmoidfitter.plot()
     exit()
 
 
