@@ -13,6 +13,7 @@ class PCA:
     """
     def __init__(self):
         self.df = pd.read_csv("Data.csv")
+        self.df2 = pd.DataFrame()
         self.X = np.empty_like
 
     def readData(self):
@@ -22,8 +23,12 @@ class PCA:
         """
         states = pd.DataFrame(self.df[['state']])
 
-        # Select all columns except first four
-        self.X = self.df.iloc[:, 4:].values
+        # Make new Dataframe, Select all columns except first four
+        self.df2 = self.df.iloc[:, 4:]
+        self.X = self.df2.values
+
+        # Divide all DALY scores by population
+        self.X[:, 13:65] = np.dot(self.X[:, 13:65].T, np.diag(1 / self.X[:, 12])).T
         # Remove 'pending' column, too many NaNs
         self.X = np.delete(self.X, 5, axis=1)
         states = states.values.flatten()
@@ -47,9 +52,7 @@ class PCA:
         states = self.readData()
         result = self.probPCA()
         # Plot
-        plt.title("Probabilistic PCA of data of 2 dimensions")
-        plt.xlabel("Healthiness")
-        plt.ylabel("Inverse number of cases")
+        plt.title("Probabilistic PCA of data of 2 dimensions, DALY scores population weighted")
         plt.scatter(result[:, 0], result[:, 1])
         for i, state in enumerate(states):
             plt.text(result[i, 0] + 0.5, result[i, 1] + 0.5, state)
@@ -58,6 +61,6 @@ class PCA:
 
 
 if __name__ == '__main__':
-    test = PCA()
-    test.mainRun()
-    print()
+    pca = PCA()
+    pca.mainRun()
+    exit()
