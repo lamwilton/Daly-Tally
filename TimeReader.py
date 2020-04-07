@@ -36,7 +36,6 @@ class TimeReader:
     def getStateData(self, state):
         """
         Get cases and deaths of state
-        :param df: Dataframe main
         :param state: State input
         :return: Cases and deaths as dataframes
         """
@@ -45,6 +44,10 @@ class TimeReader:
         return stateData
 
     def getsumDf(self):
+        """
+        Outputs national data
+        :return:
+        """
         return self.sumdf
 
 
@@ -108,7 +111,6 @@ class SigmoidFitter:
     def plot(self):
         """
         Plot sigmoid results
-        :param popt: parameters array
         :return:
         """
         plt.title("Number of deaths since day 1 at " + self.state)
