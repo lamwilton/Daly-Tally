@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from ppca import PPCA
 
+
 class PCA:
     """
     Main class
@@ -21,16 +22,23 @@ class PCA:
         Processing df and extract states
         :return: states abbr array
         """
+        POPULATION_UNIT = 1000000
         states = pd.DataFrame(self.df[['state']])
 
         # Make new Dataframe, Select all columns except first four
-        self.df2 = self.df.iloc[:, 4:]
+        self.df2 = self.df.loc[:, "DaysSinceStayatHomeOrder":]
+
+        # Divide all DALY scores, Corona stuff and Allriskfactors by population per 1000000
+        self.df2.loc[:, "15-49yearsAllcauses":"Smoking"] = \
+            self.df2.loc[:, "15-49yearsAllcauses":"Smoking"].div(self.df2["TotalPop2018"], axis=0) * POPULATION_UNIT
+        self.df2.loc[:, "positive":"onVentilatorCumulative"] = \
+            self.df2.loc[:, "positive":"onVentilatorCumulative"].div(self.df2["TotalPop2018"], axis=0) * POPULATION_UNIT
+        self.df2.loc[:, "Allriskfactors"] = self.df2.loc[:, "Allriskfactors"].div(self.df2["TotalPop2018"], axis=0)
+        # Remove 'pending', population columns
+        self.df2 = self.df2.drop(columns=["pending"])
+        self.df2 = self.df2.drop(columns=["TotalPop2018", "Log10Pop"])
         self.X = self.df2.values
 
-        # Divide all DALY scores by population
-        self.X[:, 13:65] = np.dot(self.X[:, 13:65].T, np.diag(1 / self.X[:, 12])).T
-        # Remove 'pending' column, too many NaNs
-        self.X = np.delete(self.X, 5, axis=1)
         states = states.values.flatten()
         return states
 
@@ -52,7 +60,7 @@ class PCA:
         states = self.readData()
         result = self.probPCA()
         # Plot
-        plt.title("Probabilistic PCA of data of 2 dimensions, DALY scores population weighted")
+        plt.title("Probabilistic PCA of data of 2 dimensions")
         plt.scatter(result[:, 0], result[:, 1])
         for i, state in enumerate(states):
             plt.text(result[i, 0] + 0.5, result[i, 1] + 0.5, state)

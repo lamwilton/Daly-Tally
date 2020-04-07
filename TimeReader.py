@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
+import csv
 
 
 class TimeReader:
     def __init__(self):
-        self.df = pd.read_csv("TimeSeries.csv")
+        self.df = pd.read_csv("daily.csv")
         self.sumdf = pd.DataFrame()
         self.cleaningData()
 
@@ -40,7 +41,7 @@ class TimeReader:
         :return: Cases and deaths as dataframes
         """
         df = self.df
-        stateData = ps.sqldf("SELECT * from df WHERE state = '" + state + "'")
+        stateData = ps.sqldf("SELECT * from df WHERE state = '" + state + "' ORDER BY dateChecked")
         return stateData
 
     def getsumDf(self):
@@ -81,7 +82,7 @@ class SigmoidFitter:
         temp = np.arange(0, np.size(self.xdata))
         sigma = 1 / temp ** 2
 
-        p0 = [1, 100, 10000]  # this is an mandatory initial guess
+        p0 = [1, 100, 50000]  # this is an mandatory initial guess
         self.popt, self.pcov = curve_fit(self.sigmoid, self.xdata, self.ydata, p0=p0, sigma=sigma, maxfev=1000000)
 
     def compute(self):
@@ -95,6 +96,14 @@ class SigmoidFitter:
         print("Speed: " + str(self.popt[0]) + " +/- " + str(perr[0]))
         print("Day of the half point: " + str(self.popt[1]) + " +/- " + str(perr[1]))
         print("Total number: " + str(self.popt[2]) + " +/- " + str(perr[2]))
+
+        # Write to csv
+        with open('output.csv', 'a', newline='') as csvfile:
+            # creating a csv writer object
+            csvwriter = csv.writer(csvfile)
+
+            # writing the fields
+            csvwriter.writerow([self.state, self.popt, perr])
 
     def plot(self):
         """
@@ -113,7 +122,7 @@ class SigmoidFitter:
         plt.xlim(45, 120)
         plt.ylim(0, max(y) * 1.1)
         plt.savefig(self.state + "_sigmoid.png", transperent=True)
-
+        
         plt.yscale('log')
         plt.ylim(1, max(y) * 1.1)
         plt.savefig(self.state + "_sigmoid_log.png", transperent=True)
@@ -125,7 +134,6 @@ def main():
               "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
               "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
               "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
-    states = []
     timereader = TimeReader()
     for state in states:
         stateData = timereader.getStateData(state)
