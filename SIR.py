@@ -1,9 +1,14 @@
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 
 class SIR:
+    """
+    SIR modeling class
+    https://scipython.com/book/chapter-8-scipy/additional-examples/the-sir-epidemic-model/
+    """
     def __init__(self, N=1000, I0=1, R0=0, beta=0.2, gamma=1./10, days=160):
         # Total population, N.
         self.N = N
@@ -16,8 +21,16 @@ class SIR:
         # A grid of time points (in days)
         self.t = np.linspace(0, days, days)
 
-    # The SIR model differential equations.
     def deriv(self, y, t, N, beta, gamma):
+        """
+        The SIR model differential equations.
+        :param y:
+        :param t:
+        :param N:
+        :param beta:
+        :param gamma:
+        :return: dSdt, dIdt, dRdt
+        """
         S, I, R = y
         dSdt = -beta * S * I / N
         dIdt = beta * S * I / N - gamma * I
@@ -25,6 +38,10 @@ class SIR:
         return dSdt, dIdt, dRdt
 
     def modeling(self):
+        """
+        Do the modeling SIR
+        :return: S, I, R parameters
+        """
         # Initial conditions vector
         y0 = self.S0, self.I0, self.R0
         # Integrate the SIR equations over the time grid, t.
@@ -32,8 +49,28 @@ class SIR:
         S, I, R = ret.T
         return S, I, R
 
+    def integrateFit(self, x, beta, gamma):
+        """
+        Fitting beta and gamma
+        :param beta:
+        :param gamma:
+        :return:
+        """
+        # Initial conditions vector
+        y0 = self.S0, self.I0, self.R0
+        # Integrate the SIR equations over the time grid, t.
+        ret = odeint(self.deriv, y0, x, args=(self.N, beta, gamma))
+        S, I, R = ret.T
+        return S, I, R
+
     def plot(self, S, I, R):
+        """
         # Plot the data on three separate curves for S(t), I(t) and R(t)
+        :param S:
+        :param I:
+        :param R:
+        :return:
+        """
         fig = plt.figure(facecolor='w')
         ax = fig.add_subplot(111, axisbelow=True)
         ax.set_facecolor('#dddddd')
@@ -54,9 +91,14 @@ class SIR:
 
 
 def main():
+    """
+    Main method
+    :return:
+    """
     sir = SIR()
     S, I, R = sir.modeling()
     sir.plot(S, I, R)
+    exit()
 
 
 if __name__ == '__main__':

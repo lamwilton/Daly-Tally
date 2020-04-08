@@ -113,29 +113,38 @@ class SigmoidFitter:
         Plot sigmoid results
         :return:
         """
-        plt.title("Number of deaths since day 1 at " + self.state)
-        plt.xlabel("Days since first case")
-        plt.ylabel("Number")
-        plt.scatter(self.xdata, self.ydata)
+        fig = plt.figure(facecolor='w')
+        ax = fig.add_subplot(111, axisbelow=True)
+        ax.set_facecolor('#dddddd')
+        ax.set_title("Number of deaths since day 1 at " + self.state)
+        ax.set_xlabel("Days since first case")
+        ax.set_ylabel("Number")
+        ax.grid(b=True, which='major', c='w', lw=2, ls='-')
+        ax.scatter(self.xdata, self.ydata)
         x = np.linspace(2, 500, 5000)
         y = self.sigmoid(x, *self.popt)
-        plt.plot(x, y)
+        ax.plot(x, y)
 
-        plt.xlim(45, 120)
-        plt.ylim(0, max(y) * 1.1)
+        ax.set_xlim(45, 120)
+        ax.set_ylim(0, max(y) * 1.1)
         plt.savefig(self.state + "_sigmoid.png", transperent=True)
         
-        plt.yscale('log')
-        plt.ylim(1, max(y) * 1.1)
+        ax.set_yscale('log')
+        ax.set_ylim(1, max(y) * 1.1)
         plt.savefig(self.state + "_sigmoid_log.png", transperent=True)
         plt.show()
 
 
 def main():
+    """
+    Main method
+    :return:
+    """
     states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN",
               "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
               "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
               "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+    states = []
     timereader = TimeReader()
     for state in states:
         stateData = timereader.getStateData(state)
