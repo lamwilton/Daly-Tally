@@ -3,6 +3,8 @@ import pandasql as ps
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import datetime
+import numpy as np
+import math
 
 
 def main():
@@ -23,21 +25,31 @@ def main():
 
     # Sum all states
     sumDf = ps.sqldf("SELECT day, SUM(positive) as cases FROM covidDf GROUP BY dateChecked")
+    # Compute daily increases in cases, and daily rate of increase
+    sumDf['dxdt'] = sumDf['cases'].diff()
+    sumDf['rate'] = sumDf['dxdt'] / sumDf['cases']
 
-    # Join tables
-    newDf = ps.sqldf("SELECT * FROM (SELECT day, cases FROM sumDf) NATURAL JOIN (SELECT Day, close FROM dowDf)")
+    # Remove stock data before Covid19 appeared
+    dowDf = dowDf[dowDf['Day'] > 48]
 
     # Interpolate using Cubic Splines
-    covidInter = interpolate.CubicSpline(newDf['day'], newDf['cases']).derivative(1)
-    dowInter = interpolate.CubicSpline(newDf['day'], newDf['close'])
+    covidInter = interpolate.CubicSpline(sumDf['day'], sumDf['cases']).derivative(1)
+    dowInter = interpolate.CubicSpline(dowDf['Day'], dowDf['Close'])
 
     # Plot
-    fig = plt.figure(facecolor='w')
+    fig = plt.figure(facecolor='w', figsize=(10, 7))
+
     ax = fig.add_subplot(111, axisbelow=True)
     ax.set_facecolor('#dddddd')
     ax.grid(b=True, which='major', c='w', lw=2, ls='-')
-    ax.plot(newDf['day'], covidInter(newDf['day']), 'b')
-    ax.plot(newDf['day'], dowInter(newDf['day']), 'r')
+    ax.set_title("Daily growth rate of Corona cases")
+    ax.set_xlabel("Days since first case")
+    ax.set_ylabel("DOW Index/% growth rate * 100")
+    ax.plot(sumDf['day'], sumDf['rate'] * 100000, 'b', label="COVID daily % growth rate")
+    ax.plot(dowDf['Day'], dowInter(dowDf['Day']), 'r', label="DOW Jones")
+    legend = ax.legend()
+    legend.get_frame().set_alpha(0.5)
+    plt.savefig('DOW.png', transperent=True)
     plt.show()
 
 
