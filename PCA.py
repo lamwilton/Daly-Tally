@@ -14,6 +14,9 @@ class PCA:
     """
 
     def __init__(self):
+        """
+        Data from James
+        """
         self.df = pd.read_csv("Data.csv")
         self.df2 = pd.DataFrame()
         self.X = np.empty_like

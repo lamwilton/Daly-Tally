@@ -10,6 +10,8 @@ class Stonk:
     def __init__(self):
         """
         Read from data
+        https://covidtracking.com/api/v1/states/daily.csv
+        https://finance.yahoo.com/quote/%5EDJI/history/
         """
         self.dowDf = pd.read_csv("^DJI.csv")
         self.covidDf = pd.read_csv("daily.csv")

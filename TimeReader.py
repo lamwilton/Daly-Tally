@@ -9,6 +9,9 @@ import csv
 
 class TimeReader:
     def __init__(self):
+        """
+        Data from https://covidtracking.com/api/v1/states/daily.csv
+        """
         self.df = pd.read_csv("daily.csv")
         self.sumdf = pd.DataFrame()
         self.cleaningData()
