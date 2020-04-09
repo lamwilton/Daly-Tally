@@ -12,6 +12,7 @@ class PCA:
     Attributes: df  Main Dataframe from csv
     X  Data to analyze
     """
+
     def __init__(self):
         self.df = pd.read_csv("Data.csv")
         self.df2 = pd.DataFrame()
@@ -58,12 +59,22 @@ class PCA:
 
     def mainRun(self):
         states = self.readData()
+
+        # Define state colors
+        stateColor = {'AL': 0, 'AK': 0, 'AZ': 0, 'AR': 0, 'CA': 2, 'CO': 1, 'CT': 2, 'DE': 2, 'DC': 2, 'FL': 1, 'GA': 0,
+                      'HI': 2, 'ID': 0, 'IL': 2, 'IN': 1, 'IA': 1, 'KS': 0, 'KY': 0, 'LA': 0, 'ME': 2, 'MD': 2, 'MA': 2,
+                      'MI': 1, 'MN': 2, 'MS': 0, 'MO': 0, 'MT': 0, 'NE': 0, 'NV': 1, 'NH': 2, 'NJ': 2, 'NM': 1, 'NY': 2,
+                      'NC': 1, 'ND': 0, 'OH': 1, 'OK': 0, 'OR': 2, 'PA': 1, 'RI': 2, 'SC': 0, 'SD': 0, 'TN': 0, 'TX': 0,
+                      'UT': 0, 'VT': 2, 'VA': 1, 'WA': 2, 'WV': 0, 'WI': 1, 'WY': 0}
+        cdict = {0: 'red', 1: 'purple', 2: 'blue'}
         result = self.probPCA()
-        # Plot
+
+        # Plot each state
+        plt.figure(facecolor='w', figsize=(10, 7))
         plt.title("Probabilistic PCA of data of 2 dimensions")
-        plt.scatter(result[:, 0], result[:, 1])
         for i, state in enumerate(states):
-            plt.text(result[i, 0] + 0.5, result[i, 1] + 0.5, state)
+            plt.scatter(result[i, 0], result[i, 1], c=cdict[stateColor[state]])
+            plt.text(result[i, 0] + 0.2, result[i, 1] + 0.2, state)
         plt.savefig('PPCA.png', transperent=True)
         plt.show()
 
