@@ -6,7 +6,7 @@ import datetime
 import numpy as np
 
 
-class Stonk:
+class GrowthRate:
     def __init__(self):
         """
         Read from data
@@ -16,9 +16,9 @@ class Stonk:
         self.dowDf = pd.read_csv("^DJI.csv")
         self.covidDf = pd.read_csv("daily.csv")
         self.states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN",
-                  "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
-                  "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
-                  "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+                       "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+                       "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
+                       "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
 
     def cleaning(self):
         """
@@ -41,14 +41,11 @@ class Stonk:
         sumDf = ps.sqldf("SELECT day, SUM(positive) as cases FROM covidDf GROUP BY dateChecked")
         # Compute daily increases in cases
         sumDf['dxdt'] = sumDf['cases'].diff()
-        # Compute "daily interest rate"
-        sumDf['rate'] = sumDf['dxdt'] / (sumDf['cases'] - sumDf['dxdt'])
-
-        # Save new table as csv
-        sumDf.to_csv('US_Output.csv')
+        # Compute "daily interest rate" percentage change
+        sumDf['rate'] = sumDf['cases'].pct_change().fillna(0)
 
         # Remove DOW data before Covid19 appeared
-        self.dowDf = self.dowDf[self.dowDf['Day'] > 48]
+        self.dowDf = self.dowDf[self.dowDf['Day'] > 43]
 
         # Interpolate DOW using Cubic Splines
         dowInter = interpolate.CubicSpline(self.dowDf['Day'], self.dowDf['Close'])
@@ -76,8 +73,10 @@ class Stonk:
         """
         covidDf = self.covidDf
         stateDf = ps.sqldf("SELECT * from covidDf WHERE state = '" + state + "' ORDER BY dateChecked")
-        stateDf['rateIncrease'] = stateDf['positiveIncrease'] / (stateDf['positive'] - stateDf['positiveIncrease'])
-        stateDf['deathrateIncrease'] = stateDf['deathIncrease'] / (stateDf['death'] - stateDf['deathIncrease'])
+
+        # Compute percentage changes and fill NaNs
+        stateDf['rateIncrease'] = stateDf['positive'].pct_change().fillna(0)
+        stateDf['deathrateIncrease'] = stateDf['death'].pct_change().fillna(0)
         return stateDf
 
     def plotState(self, state, stateDf):
@@ -108,8 +107,6 @@ class Stonk:
         for i in range(len(self.states)):
             # Compute rates
             stateDf = self.computeState(self.states[i])
-            stateDf['rateIncrease'] = stateDf['rateIncrease'].fillna(0)
-            stateDf['deathrateIncrease'] = stateDf['deathrateIncrease'].fillna(0)
             rate = stateDf[['date', 'rateIncrease']]
             deathrate = stateDf[['date', 'deathrateIncrease']]
 
@@ -152,13 +149,13 @@ def main():
     Main method
     :return:
     """
-    stonk = Stonk()
-    stonk.cleaning()
-    stonk.national()
-    stateDf = stonk.computeState("NY")
-    stonk.plotState("NY", stateDf)
-    arr, deatharr = stonk.allStates()
-    stonk.pseudoColorPlot(arr)
+    growth = GrowthRate()
+    growth.cleaning()
+    growth.national()
+    stateDf = growth.computeState("NY")
+    growth.plotState("NY", stateDf)
+    arr, deatharr = growth.allStates()
+    growth.pseudoColorPlot(arr)
     exit()
 
 
