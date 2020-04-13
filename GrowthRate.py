@@ -7,6 +7,9 @@ import numpy as np
 
 
 class GrowthRate:
+    """
+    Computing exponential growth rate of number of cases and visualize, comparing with DOW index
+    """
     def __init__(self):
         """
         Read from data

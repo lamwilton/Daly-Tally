@@ -8,6 +8,9 @@ import csv
 
 
 class TimeReader:
+    """
+    Reading timeseries data of number of cases/deaths of COVID19
+    """
     def __init__(self):
         """
         Data from https://covidtracking.com/api/v1/states/daily.csv

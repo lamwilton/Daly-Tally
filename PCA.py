@@ -7,10 +7,7 @@ from ppca import PPCA
 
 class PCA:
     """
-    Main class
-
-    Attributes: df  Main Dataframe from csv
-    X  Data to analyze
+    PCA of COVID data vs DALY scores
     """
 
     def __init__(self):
@@ -41,10 +38,25 @@ class PCA:
         # Remove 'pending', population columns
         self.df2 = self.df2.drop(columns=["pending"])
         self.df2 = self.df2.drop(columns=["TotalPop2018", "Log10Pop"])
+        '''
+        self.df2 = self.df2[['DaysSinceStayatHomeOrder', 'DaysSinceFirstPositive',
+                              'DaysSinceTestStart', 'positive', 'negative', 'death', 'hospitalized',
+                              'totaltests', 'recovered', 'inIcuCumulative', 'onVentilatorCumulative',
+                              'Noaccesstohandwashingfacility', 'Smoking',
+                              'PercentUrbanPop', 'Density(P/mi2)', 'DaysSinceInfection',
+                              'LandArea(mi2)']]
+        '''
         self.X = self.df2.values
 
         states = states.values.flatten()
         return states
+
+    def getdf(self):
+        """
+        Return processed dataframe
+        :return: df2
+        """
+        return self.df2
 
     def probPCA(self):
         """
