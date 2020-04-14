@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import interpolate
 import datetime
 import numpy as np
+from sys import exit
 
 
 class GrowthRate:

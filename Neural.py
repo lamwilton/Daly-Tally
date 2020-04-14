@@ -1,13 +1,14 @@
 import pandas as pd
+import pandasql as ps
 import matplotlib.pyplot as plt
 import datetime
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import models, layers
 from tensorflow.keras.layers import Dropout
+from tensorflow.keras import utils
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from PCA import PCA
 
 
 class Neural:
@@ -15,92 +16,65 @@ class Neural:
     Neural Network for county level data
     """
 
-    def __init__(self):
-        """
-        https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
-        """
-        self.population_df = pd.read_csv("covid_county_population_usafacts.csv")
-        self.confirmed_df = pd.read_csv("covid_confirmed_usafacts.csv")
-        self.death_df = pd.read_csv("covid_deaths_usafacts.csv")
-        self.daly_df = pd.read_csv("Data.csv")
-
     def cleaning(self):
-        # Date format only works for Windows
-        today = datetime.date(2020, 4, 8)
-        todaystr = today.strftime("%#m/%#d/%y")
+        hospital_df = pd.read_csv("Hospitals_County_COVID_4.10.20.csv")
+        medicare_df = pd.read_csv("Medicare_2017.csv")
+        # medicare_df = medicare_df.head(1000)
+        column_list = ['Zip_Code', 'NUM_HCPCS', 'NUM_Services', 'NUM_Medicare_BEN',
+                       'Total_Submitted_Charge_Amount', 'Total_Medicare_Allowed_Amount',
+                       'Total_Medicare_Payment_Amount',
+                       'Total_Medicare_Standardized_Payment_Amount',
+                       'NUM_HCPCS_Associated_With_Drug_Services', 'NUM_Drug_Services',
+                       'NUM_Medicare_BEN_With_Drug_Services',
+                       'Total_Drug_Submitted_Charge_Amount',
+                       'Total_Drug_Medicare_Allowed_Amount',
+                       'Total_Drug_Medicare_Payment_Amount',
+                       'Total_Drug_Medicare_Standardized_Payment_Amount',
+                       'Medical_Suppress_Indicator',
+                       'NUM_HCPCS_Associated_With_Medical_Services', 'NUM_Medical_Services',
+                       'NUM_Medicare_BEN_With_Medical_Services',
+                       'Total_Medical_Submitted_Charge_Amount',
+                       'Total_Medical_Medicare_Allowed_Amount',
+                       'Total_Medical_Medicare_Payment_Amount',
+                       'Total_Medical_Medicare_Standardized_Payment_Amount',
+                       'Average_Age_of_BEN', 'NUM_BEN_Age_Less_65', 'NUM_BEN_Age_65_to_74',
+                       'NUM_BEN_Age_75_to_84', 'NUM_BEN_Age_Greater_84', 'NUM_Female_BEN',
+                       'NUM_Male_BEN', 'NUM_Non-Hispanic_White_BEN',
+                       'NUM_Black_or_African_American_BEN', 'NUM_Asian_Pacific_Islander_BEN',
+                       'NUM_Hispanic_BEN', 'NUM_American_IndianAlaska_Native_BEN',
+                       'NUM_BEN_With_Race_Not_Elsewhere_Classified',
+                       'NUM_BEN_With_Medicare_Only_Entitlement',
+                       'NUM_BEN_With_Medicare_Medicaid_Entitlement',
+                       'PCT_BEN_Atrial_Fibrillation', 'PCT_BEN_Alzheimers_Disease_or_Dementia',
+                       'PCT_BEN_Asthma', 'PCT_BEN_Cancer', 'PCT_BEN_Heart_Failure',
+                       'PCT_BEN_Chronic_Kidney_Disease',
+                       'PCT_BEN_Chronic_Obstructive_Pulmonary_Disease', 'PCT_BEN_Depression',
+                       'PCT_BEN_Diabetes', 'PCT_BEN_Hyperlipidemia', 'PCT_BEN_Hypertension',
+                       'PCT_BEN_Ischemic_Heart_Disease', 'PCT_BEN_Osteoporosis',
+                       'PCT_BEN_Rheumatoid_Arthritis_Osteoarthritis',
+                       'PCT_BEN_Schizophrenia_Other_Psychotic_Disorders', 'PCT_BEN_Stroke',
+                       'Average_HCC_Risk_Score_of_BEN']
+        medicare_df = medicare_df[column_list]
+        medicare_df = medicare_df.fillna(0)
 
-        # Remove unallocated counties, find days since first blood
-        self.confirmed_df = self.confirmed_df[self.confirmed_df['countyFIPS'] != 0]
-        self.confirmed_df['daysSinceFirst'] = (today - datetime.date(2020, 1, 22)).days - \
-                                              self.confirmed_df.isin([0]).sum(axis=1) + 1
-        # Remove all the previous date data, calculate cases per 100000 population
-        self.confirmed_df = self.confirmed_df[
-            ['countyFIPS', 'County Name', 'State', 'stateFIPS', 'daysSinceFirst', todaystr]]
-        self.confirmed_df['population'] = self.population_df['population']
-        self.confirmed_df['per1e5'] = self.confirmed_df[todaystr] / self.population_df['population'] * 100000
+        # Remove invalid zip codes and convert to integer
+        # medicare_df = medicare_df.drop(medicare_df[medicare_df['Zip_Code'].str.isnumeric() == False].index)
+        medicare_df['Zip_Code'] = medicare_df['Zip_Code'].astype(str).str.slice(stop=5)
+        medicare_df['Zip_Code'] = pd.to_numeric(medicare_df['Zip_Code'], errors='coerce', downcast='integer')
 
-        self.death_df = self.death_df[self.death_df['countyFIPS'] != 0]
-        self.death_df['daysSinceFirst'] = (today - datetime.date(2020, 1, 22)).days - \
-                                          self.death_df.isin([0]).sum(axis=1) + 1
-        self.death_df = self.death_df[['countyFIPS', 'County Name', 'State', 'stateFIPS', 'daysSinceFirst', todaystr]]
-        self.death_df['population'] = self.population_df['population']
-        self.death_df['per1e5'] = self.death_df[todaystr] / self.population_df['population'] * 100000
+        sum = medicare_df.groupby(by='Zip_Code').sum().reset_index()
+        average = medicare_df.groupby(by='Zip_Code').mean().reset_index()
 
-        self.population_df = self.population_df[self.population_df['countyFIPS'] != 0]
+        # Inner join
+        merge_df = pd.merge(medicare_df, hospital_df, how='inner', left_on='Zip_Code', right_on='ZIP')
+        merge_df.head()
+        return merge_df
 
-    def daly(self):
-        """
-        Join county with daly data
-        :return:
-        """
-        daly_columns_list = ['state', 'TotalPop2018', '15-49yearsAllcauses',
-                             '15-49yearsAsthma', '15-49yearsChronickidneydisease',
-                             '15-49yearsChronicobstructivepulmonarydisease',
-                             '15-49yearsDiabetesmellitus',
-                             '15-49yearsInterstitiallungdiseaseandpulmonarysarcoidosis',
-                             '15-49yearsIschemicheartdisease', '15-49yearsNeoplasms',
-                             '15-49yearsOtherchronicrespiratorydiseases',
-                             '15-49yearsRheumaticheartdisease', '15-49yearsStroke',
-                             '50-69yearsAllcauses', '50-69yearsAsthma',
-                             '50-69yearsChronickidneydisease',
-                             '50-69yearsChronicobstructivepulmonarydisease',
-                             '50-69yearsDiabetesmellitus',
-                             '50-69yearsInterstitiallungdiseaseandpulmonarysarcoidosis',
-                             '50-69yearsIschemicheartdisease', '50-69yearsNeoplasms',
-                             '50-69yearsOtherchronicrespiratorydiseases',
-                             '50-69yearsRheumaticheartdisease', '50-69yearsStroke',
-                             '70+yearsAllcauses', '70+yearsAsthma', '70+yearsChronickidneydisease',
-                             '70+yearsChronicobstructivepulmonarydisease',
-                             '70+yearsDiabetesmellitus',
-                             '70+yearsInterstitiallungdiseaseandpulmonarysarcoidosis',
-                             '70+yearsIschemicheartdisease', '70+yearsNeoplasms',
-                             '70+yearsOtherchronicrespiratorydiseases',
-                             '70+yearsRheumaticheartdisease', '70+yearsStroke', 'AllAgesAllcauses',
-                             'AllAgesAsthma', 'AllAgesChronickidneydisease',
-                             'AllAgesChronicobstructivepulmonarydisease', 'AllAgesDiabetesmellitus',
-                             'AllAgesInterstitiallungdiseaseandpulmonarysarcoidosis',
-                             'AllAgesIschemicheartdisease', 'AllAgesNeoplasms',
-                             'AllAgesOtherchronicrespiratorydiseases',
-                             'AllAgesRheumaticheartdisease', 'AllAgesStroke', 'AllAgesTotal',
-                             'Airpollution', 'Highbody-massindex', 'Highfastingplasmaglucose',
-                             'HighLDLcholesterol', 'Highsystolicbloodpressure',
-                             'Impairedkidneyfunction', 'Noaccesstohandwashingfacility', 'Smoking',
-                             'Log10Pop', 'PercentUrbanPop', 'Density(P/mi2)', 'Adults19-25',
-                             'Adults26-34', 'Adults35-54', 'Adults55-64', '65+',
-                             'DaysSinceInfection', 'LandArea(mi2)', 'Children0-18', 'Allriskfactors']
-        join_df = pd.merge(neural.confirmed_df, self.daly_df[daly_columns_list], how='inner', left_on='State',
-                           right_on='state')
-        return join_df
-
-    def nnDataPrep(self, df):
-        x_list = {'Airpollution', 'Highbody-massindex', 'Highfastingplasmaglucose',
-                  'HighLDLcholesterol', 'Highsystolicbloodpressure',
-                  'Impairedkidneyfunction', 'Noaccesstohandwashingfacility', 'Smoking',
-                  'PercentUrbanPop', 'Density(P/mi2)', 'Adults19-25', 'Adults26-34',
-                  'Adults35-54', 'Adults55-64', '65+', 'DaysSinceInfection',
-                  'LandArea(mi2)', 'Children0-18', 'Allriskfactors'}
-        X = df[x_list]
-        y = df['positive']
+    def nnDataPrep(self, hospital_df):
+        x_list = {'LATITUDE',
+                  'LONGITUDE', 'POPULATION', 'BEDS', 'HELIPAD', 'POPULATION_COUNTY'}
+        X = hospital_df[x_list]
+        y = hospital_df['COVID CASES 4.10.20']
         return X, y
 
     def nn(self, X, y):
@@ -112,7 +86,7 @@ class Neural:
 
         model = models.Sequential()
         model.add(layers.Dense(16, activation=tf.nn.relu, input_dim=X_train.shape[1]))
-        model.add(layers.Dense(16, activation=tf.nn.relu))
+        model.add(layers.Dense(8, activation=tf.nn.relu))
         model.add(layers.Dense(1))
 
         model.compile(optimizer='rmsprop', loss='mse', metrics=['mae'])
@@ -123,10 +97,6 @@ class Neural:
 
 
 if __name__ == '__main__':
-    pca = PCA()
-    pca.readData()
-    df = pca.getdf()
     neural = Neural()
-    X, y = neural.nnDataPrep(df)
-    neural.nn(X, y)
+    neural.cleaning()
     exit()
