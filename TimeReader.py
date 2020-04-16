@@ -15,7 +15,7 @@ class TimeReader:
         """
         Data from https://covidtracking.com/api/v1/states/daily.csv
         """
-        self.df = pd.read_csv("daily.csv")
+        self.df = pd.read_csv("https://covidtracking.com/api/v1/states/daily.csv")
         self.sumdf = pd.DataFrame()
         self.cleaningData()
 

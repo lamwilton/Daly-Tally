@@ -18,7 +18,7 @@ class GrowthRate:
         https://finance.yahoo.com/quote/%5EDJI/history/
         """
         self.dowDf = pd.read_csv("^DJI.csv")
-        self.covidDf = pd.read_csv("daily.csv")
+        self.covidDf = pd.read_csv("https://covidtracking.com/api/v1/states/daily.csv")
         self.states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN",
                        "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
                        "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
