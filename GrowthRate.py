@@ -49,7 +49,8 @@ class GrowthRate:
         sumDf['rate'] = sumDf['cases'].pct_change().fillna(0)
 
         # Remove DOW data before Covid19 appeared
-        self.dowDf = self.dowDf[self.dowDf['Day'] > 43]
+        sumDf = sumDf[sumDf.day > 50]
+        self.dowDf = self.dowDf[self.dowDf['Day'] > 50]
 
         # Interpolate DOW using Cubic Splines
         dowInter = interpolate.CubicSpline(self.dowDf['Day'], self.dowDf['Close'])
@@ -61,10 +62,12 @@ class GrowthRate:
         ax.grid(b=True, which='major', c='w', lw=2, ls='-')
         ax.set_title("Daily growth rate of Corona cases")
         ax.set_xlabel("Days since first case")
-        ax.set_ylabel("DOW Index/% growth rate * 50")
-        ax.plot(sumDf['day'], sumDf['rate'] * 50000, 'b', label="COVID daily % growth rate")
-        ax.plot(self.dowDf['Day'], dowInter(self.dowDf['Day']), 'r', label="DOW Jones")
-        legend = ax.legend()
+        ax.set_ylabel("% growth rate")
+        ax.plot(sumDf['day'], sumDf['rate'] * 100, 'b', label="COVID daily % growth rate")
+        ax2 = ax.twinx()
+        ax2.set_ylabel("DOW Jones")
+        ax2.plot(self.dowDf['Day'], dowInter(self.dowDf['Day']), 'r', label="DOW Jones")
+        legend = fig.legend(loc=0)
         legend.get_frame().set_alpha(0.5)
         plt.savefig('DOW.png', transperent=True)
         plt.show()
