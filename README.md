@@ -1,5 +1,8 @@
 # COVID-19 #hackforhope hackathon code
 
+Devpost link: https://devpost.com/software/daly-tally/  
+More information: Daly-tally.pdf  
+
 Neural.ipynb
 
 Multilayer perceptron Neural net for county level medicare and COVID-19 data
